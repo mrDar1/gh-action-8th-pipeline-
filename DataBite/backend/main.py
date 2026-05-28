@@ -1,6 +1,6 @@
 from typing import List, Optional
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
@@ -97,7 +97,7 @@ def get_restaurant(restaurant_id: int):
     for r in RESTAURANTS:
         if r.id == restaurant_id:
             return r
-    return {"error": "Restaurant not found"}
+    raise HTTPException(status_code=404, detail="Restaurant not found")
 
 
 @app.get("/api/menu-items", response_model=List[MenuItem])
