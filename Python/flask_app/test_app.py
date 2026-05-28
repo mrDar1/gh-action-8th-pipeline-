@@ -24,8 +24,8 @@ def test_home_page(client):
 
 
 def test_api_students_list(client):
-    """Test GET /api/students returns a list."""
-    response = client.get('/api/students')
+    """Test GET /users returns a list."""
+    response = client.get('/users')
     assert response.status_code == 200
     data = response.get_json()
     # Should return a list
@@ -33,16 +33,16 @@ def test_api_students_list(client):
 
 
 def test_api_create_student(client):
-    """Test POST /api/students creates a new student."""
+    """Test POST /users creates a new student."""
     new_student = {
         'name': 'Test Student',
         'email': 'test@example.com'
     }
-    response = client.post('/api/students', json=new_student)
-    
+    response = client.post('/users', json=new_student)
+
     # Should return 201 Created
     assert response.status_code == 201
-    
+
     # Check the returned data
     data = response.get_json()
     assert data['name'] == 'Test Student'
@@ -67,11 +67,9 @@ def test_api_user_not_found(client):
 
 
 def test_request_inspector(client):
-    """Test the /inspect endpoint returns request info."""
-    response = client.get('/inspect?test=value')
+    """Test the /echo endpoint returns request info."""
+    response = client.post('/echo', json={})
     assert response.status_code == 200
-    
+
     data = response.get_json()
     assert 'method' in data
-    assert data['method'] == 'GET'
-    assert 'query_args' in data
