@@ -23,7 +23,44 @@ Parameters:
     Default: /aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64
     Description: Latest Amazon Linux 2023 AMI
 
+  AppBucket:
+    Type: String
+    Description: S3 bucket that holds the application source files
+
+  AppScriptKey:
+    Type: String
+    Default: backend/main.py
+    Description: S3 key for the FastAPI main.py script
+
 Resources:
+  # ==================== IAM ====================
+  AppInstanceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub ${EnvironmentName}-app-role
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: ReadAppScript
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: s3:GetObject
+                Resource: !Sub arn:aws:s3:::${AppBucket}/${AppScriptKey}
+
+  AppInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      InstanceProfileName: !Sub ${EnvironmentName}-app-profile
+      Roles:
+        - !Ref AppInstanceRole
+
   # ==================== Security Group ====================
   AppSecurityGroup:
     Type: AWS::EC2::SecurityGroup
@@ -57,6 +94,7 @@ Resources:
         Fn::ImportValue: !Sub ${EnvironmentName}-public-subnet-1
       SecurityGroupIds:
         - !Ref AppSecurityGroup
+      IamInstanceProfile: !Ref AppInstanceProfile
       Tags:
         - Key: Name
           Value: !Sub ${EnvironmentName}-app-server
@@ -67,51 +105,10 @@ Resources:
           dnf update -y
           dnf install -y python3.11 python3.11-pip nginx
           mkdir -p /opt/databite/backend /opt/databite/frontend
-          pip3.11 install fastapi uvicorn
+          pip3.11 install fastapi uvicorn pydantic
 
-          # Backend
-          cat > /opt/databite/backend/main.py << 'PYEOF'
-          from fastapi import FastAPI
-          from fastapi.middleware.cors import CORSMiddleware
-          app = FastAPI()
-          app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
-          RESTAURANTS = [
-            {"id":1,"name":"La Piazza","cuisine":"Italian","location":"Tel Aviv","menu_items":45,"rating":4.7},
-            {"id":2,"name":"Sakura","cuisine":"Japanese","location":"Herzliya","menu_items":62,"rating":4.5},
-            {"id":3,"name":"The Burger Joint","cuisine":"American","location":"Tel Aviv","menu_items":28,"rating":4.2},
-            {"id":4,"name":"Falafel King","cuisine":"Middle Eastern","location":"Jerusalem","menu_items":18,"rating":4.8},
-            {"id":5,"name":"Pasta Mia","cuisine":"Italian","location":"Haifa","menu_items":37,"rating":4.4},
-            {"id":6,"name":"Dragon Palace","cuisine":"Chinese","location":"Tel Aviv","menu_items":55,"rating":4.3},
-          ]
-          MENU_ITEMS = [
-            {"id":1,"name":"Margherita Pizza","price":52,"category":"Main","restaurant":"La Piazza"},
-            {"id":2,"name":"Carbonara","price":58,"category":"Main","restaurant":"La Piazza"},
-            {"id":3,"name":"Tiramisu","price":38,"category":"Dessert","restaurant":"La Piazza"},
-            {"id":4,"name":"Salmon Sashimi","price":68,"category":"Starter","restaurant":"Sakura"},
-            {"id":5,"name":"Dragon Roll","price":72,"category":"Main","restaurant":"Sakura"},
-            {"id":6,"name":"Miso Soup","price":22,"category":"Starter","restaurant":"Sakura"},
-            {"id":7,"name":"Classic Burger","price":62,"category":"Main","restaurant":"The Burger Joint"},
-            {"id":8,"name":"Sweet Potato Fries","price":28,"category":"Side","restaurant":"The Burger Joint"},
-            {"id":9,"name":"Falafel Plate","price":35,"category":"Main","restaurant":"Falafel King"},
-            {"id":10,"name":"Hummus","price":25,"category":"Starter","restaurant":"Falafel King"},
-            {"id":11,"name":"Kung Pao Chicken","price":56,"category":"Main","restaurant":"Dragon Palace"},
-            {"id":12,"name":"Spring Rolls","price":32,"category":"Starter","restaurant":"Dragon Palace"},
-          ]
-          @app.get("/")
-          def root():
-              return {"status":"ok"}
-          @app.get("/api/stats")
-          def stats():
-              return {"total_restaurants":len(RESTAURANTS),"total_menu_items":len(MENU_ITEMS),"cuisines_tracked":len(set(r["cuisine"] for r in RESTAURANTS)),"cities_covered":len(set(r["location"] for r in RESTAURANTS))}
-          @app.get("/api/restaurants")
-          def restaurants():
-              return RESTAURANTS
-          @app.get("/api/menu-items")
-          def menu_items(restaurant: str = None):
-              if restaurant:
-                  return [i for i in MENU_ITEMS if i["restaurant"].lower() == restaurant.lower()]
-              return MENU_ITEMS
-          PYEOF
+          # Backend - fetch from S3
+          aws s3 cp s3://${AppBucket}/${AppScriptKey} /opt/databite/backend/main.py
 
           # Systemd service
           cat > /etc/systemd/system/databite.service << 'SVCEOF'
