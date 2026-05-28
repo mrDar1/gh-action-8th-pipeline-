@@ -3,6 +3,8 @@ Description: >
   DataBite App - Single EC2 in public subnet.
   Hosts React frontend (Nginx) + FastAPI backend (Uvicorn).
   Uses UserData to install and run everything.
+  USE ONLY FOR DEMO/TESTING - NOT PRODUCTION READY (no load balancing, no auto-scaling, single point of failure, security group allows wide open access, etc).
+  NO Cloudfron
 
 Parameters:
   EnvironmentName:
