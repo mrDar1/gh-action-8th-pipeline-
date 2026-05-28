@@ -152,7 +152,7 @@ Resources:
           HTMLEOF
 
           # Nginx - remove default server block from main config
-          awk '/^[[:space:]]*server[[:space:]]*\{/{skip=1} skip&&/^[[:space:]]*\}/{skip=0;next} !skip' /etc/nginx/nginx.conf > /tmp/nginx.conf.tmp && mv /tmp/nginx.conf.tmp /etc/nginx/nginx.conf
+          awk '/^[[:space:]]*server[[:space:]]*\{/{skip=1;depth=1;next} skip{o=$0;c=$0;depth+=gsub(/\{/,"_",o)-gsub(/\}/,"_",c);if(depth<=0)skip=0;next} {print}' /etc/nginx/nginx.conf > /tmp/nginx.conf.tmp && mv /tmp/nginx.conf.tmp /etc/nginx/nginx.conf
           rm -f /etc/nginx/conf.d/default.conf
           cat > /etc/nginx/conf.d/databite.conf << 'NGEOF'
           server { listen 80 default_server; server_name _; root /opt/databite/frontend; index index.html;
