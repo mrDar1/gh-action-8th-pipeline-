@@ -3,7 +3,6 @@ Tests for the FastAPI application.
 Run with: pytest test_main.py -v
 """
 
-import pytest
 from fastapi.testclient import TestClient
 from main import app
 
@@ -38,7 +37,7 @@ def test_create_student_success():
         "role": "student"
     }
     response = client.post("/students", json=new_student)
-    
+
     assert response.status_code == 201
     data = response.json()
     assert data["name"] == "Test Student"
@@ -55,7 +54,7 @@ def test_create_student_validation_error():
         "role": "invalid_role"  # Not in allowed values
     }
     response = client.post("/students", json=invalid_student)
-    
+
     # Should return 422 Unprocessable Entity (validation error)
     assert response.status_code == 422
 
@@ -64,7 +63,7 @@ def test_get_single_student():
     """Test GET /students/{id} returns a single student."""
     response = client.get("/students/1")
     assert response.status_code == 200
-    
+
     data = response.json()
     assert data["id"] == 1
     assert "name" in data
@@ -79,18 +78,18 @@ def test_get_student_not_found():
 
 def test_query_parameters():
     """Test GET /students with query parameters."""
-    response = client.get("/students?skip=0&limit=1")
+    response = client.get("/students?role=teacher")
     assert response.status_code == 200
     data = response.json()
-    # Should respect the limit parameter
-    assert len(data) <= 1
+    assert len(data) > 0
+    assert all(s["role"] == "teacher" for s in data)
 
 
 def test_async_demo():
     """Test the async demo endpoint (may take 5 seconds)."""
     response = client.get("/async-demo")
     assert response.status_code == 200
-    
+
     data = response.json()
     assert "message" in data
     assert "elapsed_seconds" in data
