@@ -6,7 +6,7 @@ on:
       - main
 concurrency:
   group: deploy-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: true  # if 2 pushes happen at close time - cacell the first.
 
 
 
