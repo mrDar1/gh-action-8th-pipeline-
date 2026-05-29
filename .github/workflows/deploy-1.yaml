@@ -12,9 +12,9 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
-    # defaults:
-    #   run:
-    #     working-directory: frontend
+    defaults:
+      run:
+        working-directory: frontend
     steps:
       - uses: actions/checkout@v4
 
