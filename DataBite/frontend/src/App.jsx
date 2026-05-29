@@ -88,7 +88,7 @@ function App() {
 
       {/* CI/CD check banner */}
       <div className="w-full bg-indigo-600 text-white text-center py-3 text-lg font-bold tracking-wide">
-        Yuval edit CI-CD check - 1
+        Yuval edit CI-CD check - 2
       </div>
 
       <main className="max-w-7xl mx-auto px-6 py-10">
